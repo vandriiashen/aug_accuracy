@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 import random
 import os
 import argparse
@@ -22,7 +21,7 @@ def train(data_root, dataset_name, data_type, nn_type, run_num):
     save_path = Path(save_path)
     
     # Edit batch size depending on the GPU
-    batch_size = 4
+    batch_size = 1
     
     train_ds = util.ImageDatasetTransformable(train_input_glob, train_target_glob, data_type,
                random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=True, horizontal_flip=True, rotate=True)
@@ -45,7 +44,7 @@ def train(data_root, dataset_name, data_type, nn_type, run_num):
     best_validation_loss = np.inf
     prev_best_epoch = -1
     only_best_torch = True
-    logger = util.Logger(log_path)
+    logger = util.Logger(log_path, model)
     
     # Edit the number of epochs depending on the convergence
     epochs = 1000
@@ -57,9 +56,12 @@ def train(data_root, dataset_name, data_type, nn_type, run_num):
         validation_loss = model.validate(val_dl)
         logger.log_validation(validation_loss, epoch)
         
+        if epoch % 50 == 0:
+            logger.check_validation(val_dl, epoch)
+        
         if validation_loss < best_validation_loss:
             best_validation_loss = validation_loss
-            model.save(save_path / "{}.torch".format(epoch), epoch)
+            model.save(save_path / "{}.torch".format(epoch), epoch, batch_size)
             if only_best_torch == True:
                 if prev_best_epoch != -1:
                     os.remove(save_path / "{}.torch".format(prev_best_epoch))
@@ -86,8 +88,6 @@ if __name__ == "__main__":
         
     random.seed(random_seed)
     np.random.seed(random_seed)
-    torch.use_deterministic_algorithms(True)
     torch.manual_seed(random_seed)
-    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
-    
+        
     train(data_root, dataset_name, data_type, nn_type, run_num)

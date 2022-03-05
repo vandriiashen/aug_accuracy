@@ -91,7 +91,7 @@ def train_test():
         print("{:05d} Validation loss = {}".format(epoch, validation_loss))
         if validation_loss < best_validation_loss:
             best_validation_loss = validation_loss
-            model.save(save_path / "{}.torch".format(epoch), epoch)
+            model.save(save_path / "{}.torch".format(epoch), epoch, batch_size)
             if only_best_torch == True:
                 if prev_best_epoch != -1:
                     os.remove(save_path / "{}.torch".format(prev_best_epoch))
@@ -122,10 +122,10 @@ def apply_single_test():
     print(out_max.indices.item())
     
 def apply_data_test():
-    model_name = "nofo_playdoh2"
+    model_name = "p_t6"
     nn_type = "resnet50"
-    run_num = 2
-    epoch = 799
+    run_num = 1
+    epoch = 2
     test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/input/*.tiff"
     test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/stats.csv"
     save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
@@ -188,5 +188,5 @@ if __name__ == "__main__":
     #normalization()
     #train_test()
     #apply_single_test()
-    apply_data_test()
+    #apply_data_test()
     #cli_test()

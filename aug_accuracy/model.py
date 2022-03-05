@@ -101,9 +101,12 @@ class NNmodel:
 
         return avg_loss
     
-    def save(self, path, epoch):
+    def save(self, path, epoch, batch_size):
+        init_seed = torch.initial_seed()
         state = {
             "epoch": int(epoch),
+            "random_seed" : int(init_seed),
+            "batch_size" : int(batch_size),
             "state_dict": self.net.state_dict(),
             "optimizer": self.optimizer.state_dict(),
         }
@@ -135,5 +138,5 @@ class NNmodel:
         self.optimizer.load_state_dict(state["optimizer"])
         self.net.cuda()
         epoch = state["epoch"]
-
+        
         return epoch
