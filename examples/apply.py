@@ -7,10 +7,17 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 
 import aug_accuracy as util
+from aug_accuracy import InputError
 
 def test(data_folder, epoch, data_type, nn_type):
-    test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/input/*.tiff"
-    test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/stats.csv"
+    if data_type == "playdoh":
+        test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/input/*.tiff"
+        test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/stats.csv"
+    elif data_type == "avocado":
+        test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/input/*.tiff"
+        test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/stats.csv"
+    else:
+        raise InputError("Unknown sample type. Got {}".format(sample_type))
     
     batch_size = 1
     test_ds = util.ImageDatasetTransformable(test_input_glob, test_target_glob, data_type,
@@ -30,7 +37,7 @@ def test(data_folder, epoch, data_type, nn_type):
     
     conf_mat, y_pred, y_true = model.test(test_dl)
     print(conf_mat)
-    print(util.utils.split_prediction(y_pred, y_true, 45))
+    print(util.utils.split_prediction(y_pred, y_true, 60))
     accuracy = util.utils.compute_accuracy(y_pred, y_true)
     
     return accuracy

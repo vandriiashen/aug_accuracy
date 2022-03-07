@@ -7,6 +7,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 
 import aug_accuracy as util
+from aug_accuracy import InputError
 
 def train(data_root, dataset_name, data_type, nn_type, run_num):
     data_folder = "{}/{}".format(data_root, dataset_name)
@@ -29,6 +30,9 @@ def train(data_root, dataset_name, data_type, nn_type, run_num):
     val_ds = util.ImageDatasetTransformable(val_input_glob, val_target_glob, data_type,
              random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=False, horizontal_flip=False, rotate=True)
     val_dl = DataLoader(val_ds, batch_size, shuffle=False)
+    
+    train_ds.check_class_frequency()
+    val_ds.check_class_frequency()
     
     c_in = 1
     if data_type == "playdoh":

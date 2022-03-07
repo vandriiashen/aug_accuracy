@@ -19,8 +19,8 @@ class InputError(Exception):
         self.message = message
         
 def avocado_classification(gt_fname):
-    low_thr = 10**-6
-    high_thr = 10**-3
+    low_thr = 10**-3
+    high_thr = 10**-2
     gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
     air_ratio = gt[:,4] / gt[:,1:].sum(axis=1)
     y = np.where(air_ratio > low_thr, 1, 0)
@@ -145,3 +145,8 @@ class ImageDatasetTransformable(Dataset):
         inp = torch.unsqueeze(inp, 0)
         
         return (inp, tg)
+    
+    def check_class_frequency(self):
+        unique, counts = np.unique(self.target_labels, return_counts=True)
+        print(unique)
+        print(counts)

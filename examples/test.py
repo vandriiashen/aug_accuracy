@@ -8,6 +8,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 
 import aug_accuracy as util
+from aug_accuracy import InputError
 
 def load_data():
     input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/input/*.tiff"

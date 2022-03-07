@@ -5,7 +5,7 @@ __email__ = "vladyslav.andriiashen@cwi.nl"
 
 import aug_accuracy.data_loader
 
-from .data_loader import ImageDatasetTransformable
+from .data_loader import ImageDatasetTransformable, InputError
 from .model import NNmodel
 from .logger import Logger
 from . import utils
