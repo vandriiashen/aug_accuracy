@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 import random
 import os
 import argparse
@@ -176,6 +175,31 @@ def cli_test():
     print(log_path)
     
     print("Random seed = ", random_seed)
+    
+def activation_test():
+    model_name = "av_t2"
+    nn_type = "resnet50"
+    run_num = 2
+    epoch = 419
+    test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/input/*.tiff"
+    test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/stats.csv"
+    save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
+    batch_size = 1
+    test_ds = util.ImageDatasetTransformable(test_input_glob, test_target_glob, "avocado",
+              random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=False, horizontal_flip=False, rotate=False)
+    test_dl = DataLoader(test_ds, batch_size, shuffle=False)
+    
+    model = util.NNmodel(1, 3, "resnet50")
+    model.load(save_path / "{}.torch".format(epoch))
+    #print(model.net)
+    
+    cam = util.ActivationMap(model)
+    
+    inp, tg = iter(test_dl).next()
+    tg = tg.item()
+    out = model.classify(inp)
+    out_class = torch.max(out, 1).indices.item()
+    cam.visualize(inp, tg, out_class, "cam.png")
         
 if __name__ == "__main__":
     random_seed = 2
@@ -191,3 +215,4 @@ if __name__ == "__main__":
     #apply_single_test()
     #apply_data_test()
     #cli_test()
+    activation_test()

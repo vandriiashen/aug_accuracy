@@ -27,6 +27,13 @@ def avocado_classification(gt_fname):
     y[air_ratio > high_thr] = 2
     return y
 
+def avocado_binary_classification(gt_fname):
+    thr = 10**-2
+    gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
+    air_ratio = gt[:,4] / gt[:,1:].sum(axis=1)
+    y = np.where(air_ratio > thr, 1, 0)
+    return y
+
 def playdoh_classification(gt_fname):
     gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
     stone_pixels = gt[:,2]
@@ -97,6 +104,8 @@ class ImageDatasetTransformable(Dataset):
             self.target_labels = playdoh_classification(target_fname)
         elif sample_type == "avocado":
             self.target_labels = avocado_classification(target_fname)
+        elif sample_type == "avocado_binary":
+            self.target_labels = avocado_binary_classification(target_fname)
         else:
             raise InputError("Unknown sample type. Got {}".format(sample_type))
         

@@ -29,6 +29,7 @@ class NNmodel:
     def __init__(self, c_in, c_out, nn_type):
         self.c_in = c_in
         self.c_out = c_out
+        self.nn_type = nn_type
         self.scaling = scaling_module(c_in)
         
         self.set_classification_nn(c_in, c_out, nn_type)

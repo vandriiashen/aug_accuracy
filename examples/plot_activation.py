@@ -39,45 +39,34 @@ def test(data_folder, epoch, data_type, nn_type):
     
     model = util.NNmodel(c_in, c_out, nn_type)
     model.load(data_folder / "{}.torch".format(epoch))
+    cam = util.ActivationMap(model)
     
-    conf_mat, y_pred, y_true = model.test(test_dl)
-    print(conf_mat)
-    print(util.utils.split_prediction(y_pred, y_true, 60))
-    accuracy = util.utils.compute_accuracy(y_pred, y_true)
+    img_folder = Path("../res")
+    img_folder.mkdir(exist_ok=True)
+    i = 0
+    for (inp, tg) in test_dl:
+        tg = tg.item()
+        out = model.classify(inp)
+        out_class = torch.max(out, 1).indices.item()
+        cam.visualize(inp, tg, out_class, img_folder / "{}.png".format(i))
+        i += 1
     
-    return accuracy
-
 if __name__ == "__main__":  
     parser = argparse.ArgumentParser()
     parser.add_argument('--nn', type=str, required=True, help='Network architecture')
     parser.add_argument('--data', type=str, required=True, help='Folder with the training set')
     parser.add_argument('--obj', type=str, required=True, choices=['playdoh', 'avocado', 'avocado_binary'], help='Type of the dataset (playdoh or avocado)')
+    parser.add_argument('--run', type=int, required=True, help='Run number')
     args = parser.parse_args()
     
-    data_root = "../network_state/"
+    data_root = "../network_state"
     dataset_name = args.data
     data_type = args.obj
     nn_type = args.nn
+    run_num = args.run
     
-    data_root = Path(data_root)
-    base_name = "{}_{}_r".format(dataset_name, nn_type)
-    subfolders = [x for x in data_root.iterdir() if x.is_dir()]
-    subfolders = filter(lambda x: x.name.startswith(base_name), subfolders)
-    run_epochs = []
-    acc_values = []
-    for folder in subfolders:
-        epochs = [int(x.stem) for x in folder.glob("*.torch")]
-        best_epoch = max(epochs)
-        print("Network {}, epoch {}".format(folder.name, best_epoch))
-        accuracy = test(folder, best_epoch, data_type, nn_type)
-        run_epochs.append(best_epoch)
-        acc_values.append(accuracy)
-        
-    pairs = []
-    for i in range(len(run_epochs)):
-        pairs.append("{},{:.3f}".format(run_epochs[i], acc_values[i]))
-    print(",".join(pairs))
-    print(",".join(pairs))
-        
-
+    folder = Path("{}/{}_{}_r{}/".format(data_root, dataset_name, nn_type, run_num))
+    epochs = [int(x.stem) for x in folder.glob("*.torch")]
+    best_epoch = max(epochs)
     
+    test(folder, best_epoch, data_type, nn_type)

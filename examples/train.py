@@ -39,6 +39,8 @@ def train(data_root, dataset_name, data_type, nn_type, run_num):
         c_out = 2
     elif data_type == "avocado":
         c_out = 3
+    elif data_type == "avocado_binary":
+        c_out = 2
     else:
         raise InputError("Unknown sample type. Got {}".format(sample_type))
     
@@ -75,7 +77,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--nn', type=str, required=True, help='Network architecture')
     parser.add_argument('--data', type=str, required=True, help='Folder with the training set')
-    parser.add_argument('--obj', type=str, required=True, choices=['playdoh', 'avocado'], help='Type of the dataset (playdoh or avocado)')
+    parser.add_argument('--obj', type=str, required=True, choices=['playdoh', 'avocado', 'avocado_binary'], help='Type of the dataset (playdoh or avocado)')
     parser.add_argument('--run', type=int, required=True, help='Run number')
     parser.add_argument('--seed', type=int, required=False, help='Random seed. Optional, run number will be used as a seed if this argument is not provided')
     args = parser.parse_args()
