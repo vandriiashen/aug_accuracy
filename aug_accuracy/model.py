@@ -40,6 +40,10 @@ class NNmodel:
             self.classifier = models.resnet50(pretrained=False)
             self.classifier.conv1 = nn.Conv2d(c_in, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
             self.classifier.fc = nn.Linear(in_features=2048, out_features=c_out, bias=True)
+        elif nn_type == "efficientnetb4":
+            self.classifier = models.efficientnet_b4(pretrained=False)
+            self.classifier.features[0][0] = nn.Conv2d(c_in, 48, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            self.classifier.classifier[1] = nn.Linear(in_features=1792, out_features=c_out, bias=True)
         else:
             raise InputError("Unknown sample type. Got {}".format(sample_type))
         
@@ -87,6 +91,7 @@ class NNmodel:
         return loss
     
     def train(self, dl):
+        self.classifier.train()
         avg_loss = 0
         for (inp, tg) in dl:
             avg_loss += self.learn(inp, tg).item()
@@ -95,6 +100,7 @@ class NNmodel:
         return avg_loss
     
     def validate(self, dl):
+        self.classifier.eval()
         avg_loss = 0
         for (inp, tg) in dl:
             avg_loss += self.forward(inp, tg).item()
@@ -114,18 +120,29 @@ class NNmodel:
         torch.save(state, path)
 
     def test(self, dl):
+        self.classifier.eval()
         conf_mat = np.zeros((self.c_out, self.c_out))
         y_true = []
         y_pred = []
+        j = 0
         
         for (inp, tg) in dl:
+            #print(inp)
             out = self.classify(inp)
-            out_max = torch.max(out, 1)
-            gt = tg.item()
-            prediction = out_max.indices.item()
-            y_true.append(gt)
-            y_pred.append(prediction)
-            conf_mat[gt, prediction] += 1
+            for i in range(out.size(dim=0)):
+                out_max = torch.max(out[i,:], 0)
+                gt = tg[i].item()
+                prediction = out_max.indices.item()
+                print(j, prediction)
+                if j in [188,389,399,405,407]:
+                    torch.set_printoptions(threshold=10_000)
+                    print(inp)
+                    print(out[i,:])
+                #print(tg)
+                y_true.append(gt)
+                y_pred.append(prediction)
+                conf_mat[gt, prediction] += 1
+                j += 1
             
         y_pred = np.array(y_pred)
         y_true = np.array(y_true)

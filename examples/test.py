@@ -4,14 +4,15 @@ import random
 import os
 import argparse
 from pathlib import Path
+from configparser import ConfigParser
 from torch.utils.data import DataLoader
 
 import aug_accuracy as util
 from aug_accuracy import InputError
 
 def load_data():
-    input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/input/*.tiff"
-    target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/stats.csv"
+    input_glob = "../../../Data/Real/AugNN/p_t6/training/input/*.tiff"
+    target_glob = "../../../Data/Real/AugNN/p_t6/training/stats.csv"
     
     batch_size = 4
     test_ds = util.ImageDatasetTransformable(input_glob, target_glob, "playdoh",
@@ -24,8 +25,8 @@ def load_data():
     plt.show()
     
 def normalization():
-    input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/input/*.tiff"
-    target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/stats.csv"
+    input_glob = "../../../Data/Real/AugNN/p_t6/training/input/*.tiff"
+    target_glob = "../../../Data/Real/AugNN/p_t6/training/stats.csv"
     
     batch_size = 1
     ds = util.ImageDatasetTransformable(input_glob, target_glob, "playdoh",
@@ -61,20 +62,26 @@ def train_test():
     model_name = "p_t6"
     nn_type = "resnet50"
     run_num = 1
-    train_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/input/*.tiff"
-    train_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/stats.csv"
-    val_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/input/*.tiff"
-    val_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/p_t6/training/stats.csv"
+    train_input_glob = "../../../Data/Real/AugNN/p_t6/training/input/*.tiff"
+    train_target_glob = "../../../Data/Real/AugNN/p_t6/training/stats.csv"
+    val_input_glob = "../../../Data/Real/AugNN/p_t6/training/input/*.tiff"
+    val_target_glob = "../../../Data/Real/AugNN/p_t6/training/stats.csv"
     save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
     save_path.mkdir(exist_ok=True)
     
+    parser = util.utils.read_config('config.ini')
+    dtype_conf = parser['playdoh']
+    
     batch_size = 4
-    train_ds = util.ImageDatasetTransformable(train_input_glob, train_target_glob, "playdoh",
+    train_ds = util.ImageDatasetTransformable(train_input_glob, train_target_glob, dtype_conf,
                random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=True, horizontal_flip=True, rotate=True)
     train_dl = DataLoader(train_ds, batch_size, shuffle=False)
-    val_ds = util.ImageDatasetTransformable(val_input_glob, val_target_glob, "playdoh",
+    val_ds = util.ImageDatasetTransformable(val_input_glob, val_target_glob, dtype_conf,
              random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=False, horizontal_flip=False, rotate=True)
     val_dl = DataLoader(val_ds, batch_size, shuffle=False)
+    
+    inp, tg = iter(train_dl).next()
+    print(inp.type())
     
     model = util.NNmodel(1, 2, nn_type)
     model.set_normalization(train_dl)
@@ -102,8 +109,8 @@ def apply_single_test():
     nn_type = "resnet50"
     run_num = 1
     epoch = 3
-    test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/input/*.tiff"
-    test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/stats.csv"
+    test_input_glob = "../../../Data/Real/AugNN/test_playdoh3/input/*.tiff"
+    test_target_glob = "../../../Data/Real/AugNN/test_playdoh3/stats.csv"
     save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
     
     batch_size = 1
@@ -126,8 +133,8 @@ def apply_data_test():
     nn_type = "resnet50"
     run_num = 1
     epoch = 2
-    test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/input/*.tiff"
-    test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/stats.csv"
+    test_input_glob = "../../../Data/Real/AugNN/test_playdoh3/input/*.tiff"
+    test_target_glob = "../../../Data/Real/AugNN/test_playdoh3/stats.csv"
     save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
     
     batch_size = 1
@@ -147,7 +154,7 @@ def cli_test():
     parser = argparse.ArgumentParser()
     parser.add_argument('--nn', type=str, required=True, help='Network architecture')
     parser.add_argument('--data', type=str, required=True, help='Folder with the training set')
-    parser.add_argument('--obj', type=str, required=True, choices=['playdoh', 'avocado'], help='Type of the dataset (playdoh or avocado)')
+    parser.add_argument('--obj', type=str, required=True, choices=['playdoh', 'avocado', 'avocado_binary', 'avocado_multi'], help='Type of the dataset (playdoh or avocado)')
     parser.add_argument('--run', type=int, required=True, help='Run number, also used as a random seed')
     parser.add_argument('--seed', type=int, required=False, help='Random seed. Optional, run number will be used as a seed if this argument is not provided')
     args = parser.parse_args()
@@ -174,6 +181,9 @@ def cli_test():
     print(save_path)
     print(log_path)
     
+    model = util.NNmodel(1, 2, nn_type)
+    print(model.net[1])
+        
     print("Random seed = ", random_seed)
     
 def activation_test():
@@ -181,8 +191,8 @@ def activation_test():
     nn_type = "resnet50"
     run_num = 2
     epoch = 419
-    test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/input/*.tiff"
-    test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/stats.csv"
+    test_input_glob = "../../../Data/Real/AugNN/test_avocado3/input/*.tiff"
+    test_target_glob = "../../../Data/Real/AugNN/test_avocado3/stats.csv"
     save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
     batch_size = 1
     test_ds = util.ImageDatasetTransformable(test_input_glob, test_target_glob, "avocado",
@@ -200,6 +210,58 @@ def activation_test():
     out = model.classify(inp)
     out_class = torch.max(out, 1).indices.item()
     cam.visualize(inp, tg, out_class, "cam.png")
+    
+def multi_test():
+    model_name = "av_m1"
+    nn_type = "resnet50"
+    run_num = 1
+    train_input_glob = "../../../Data/Real/AugNN/av_m1/training/input/*.tiff"
+    train_target_glob = "../../../Data/Real/AugNN/av_m1/training/stats.csv"
+    val_input_glob = "../../../Data/Real/AugNN/av_m1/training/input/*.tiff"
+    val_target_glob = "../../../Data/Real/AugNN/av_m1/training/stats.csv"
+    save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
+    save_path.mkdir(exist_ok=True)
+    
+    batch_size = 1
+    train_ds = util.ImageDatasetTransformable(train_input_glob, train_target_glob, "avocado_multi",
+               random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=True, horizontal_flip=True, rotate=True)
+    train_dl = DataLoader(train_ds, batch_size, shuffle=False)
+    val_ds = util.ImageDatasetTransformable(val_input_glob, val_target_glob, "avocado_multi",
+             random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=False, horizontal_flip=False, rotate=True)
+    val_dl = DataLoader(val_ds, batch_size, shuffle=False)
+    
+    inp, tg = iter(train_dl).next()
+    print(inp.type())
+    
+    model = util.NNmodel(30, 2, nn_type)
+    model.set_normalization(train_dl)
+
+    best_validation_loss = np.inf
+    prev_best_epoch = -1
+    only_best_torch = True
+
+    epochs = 5
+    for epoch in range(epochs):
+        train_loss = model.train(train_dl)
+        print("{:05d} Training loss   = {}".format(epoch, train_loss))
+        validation_loss = model.validate(val_dl)
+        print("{:05d} Validation loss = {}".format(epoch, validation_loss))
+        if validation_loss < best_validation_loss:
+            best_validation_loss = validation_loss
+            model.save(save_path / "{}.torch".format(epoch), epoch, batch_size)
+            if only_best_torch == True:
+                if prev_best_epoch != -1:
+                    os.remove(save_path / "{}.torch".format(prev_best_epoch))
+                prev_best_epoch = epoch
+                
+def config_test():
+    parser = ConfigParser()
+    parser.read("config.ini")
+    config = {s:dict(parser.items(s)) for s in parser.sections()}
+    config_sections = list(config.keys())
+    config_sections.remove('General')
+    print(config_sections)
+    print(config['playdoh'])
         
 if __name__ == "__main__":
     random_seed = 2
@@ -211,8 +273,10 @@ if __name__ == "__main__":
     
     #load_data()
     #normalization()
-    #train_test()
+    train_test()
     #apply_single_test()
     #apply_data_test()
     #cli_test()
-    activation_test()
+    #activation_test()
+    #multi_test()
+    #config_test()

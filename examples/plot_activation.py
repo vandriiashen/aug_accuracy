@@ -9,33 +9,19 @@ from torch.utils.data import DataLoader
 import aug_accuracy as util
 from aug_accuracy import InputError
 
-def test(data_folder, epoch, data_type, nn_type):
-    if data_type == "playdoh":
-        test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/input/*.tiff"
-        test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_playdoh3/stats.csv"
-    elif data_type == "avocado":
-        test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/av_t4/training/input/*.tiff"
-        test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/av_t4/training/stats.csv"
-    elif data_type == "avocado_binary":
-        test_input_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/input/*.tiff"
-        test_target_glob = "/export/scratch2/vladysla/Data/Real/AugNN/test_avocado3/stats.csv"
-    else:
-        raise InputError("Unknown sample type. Got {}".format(sample_type))
+def test(config, data_folder, epoch, data_type, nn_type):
+    test_root = config[data_type]['test_folder']
+    test_input_glob = "{}/input/*.tiff".format(test_root)
+    test_target_glob = "{}/stats.csv".format(test_root)
     
     batch_size = 1
-    test_ds = util.ImageDatasetTransformable(test_input_glob, test_target_glob, data_type,
+    test_ds = util.ImageDatasetTransformable(test_input_glob, test_target_glob, config[data_type],
                random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=False, horizontal_flip=False, rotate=False)
     test_dl = DataLoader(test_ds, batch_size, shuffle=False)
     
-    c_in = 1
-    if data_type == "playdoh":
-        c_out = 2
-    elif data_type == "avocado":
-        c_out = 3
-    elif data_type == "avocado_binary":
-        c_out = 2
-    else:
-        raise InputError("Unknown sample type. Got {}".format(sample_type))
+    c_in = config[data_type]['c_in']
+    c_out = config[data_type]['c_out']
+    assert c_in == 1
     
     model = util.NNmodel(c_in, c_out, nn_type)
     model.load(data_folder / "{}.torch".format(epoch))
@@ -52,10 +38,13 @@ def test(data_folder, epoch, data_type, nn_type):
         i += 1
     
 if __name__ == "__main__":  
+    config = util.utils.read_config('config.ini')
+    data_keys = util.utils.get_available_data_types(config)
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--nn', type=str, required=True, help='Network architecture')
     parser.add_argument('--data', type=str, required=True, help='Folder with the training set')
-    parser.add_argument('--obj', type=str, required=True, choices=['playdoh', 'avocado', 'avocado_binary'], help='Type of the dataset (playdoh or avocado)')
+    parser.add_argument('--obj', type=str, required=True, choices=data_keys, help='Type of the dataset')
     parser.add_argument('--run', type=int, required=True, help='Run number')
     args = parser.parse_args()
     
@@ -69,4 +58,4 @@ if __name__ == "__main__":
     epochs = [int(x.stem) for x in folder.glob("*.torch")]
     best_epoch = max(epochs)
     
-    test(folder, best_epoch, data_type, nn_type)
+    test(config, folder, best_epoch, data_type, nn_type)
