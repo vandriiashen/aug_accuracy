@@ -4,6 +4,7 @@ import random
 import os
 import argparse
 from pathlib import Path
+from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 import aug_accuracy as util
@@ -26,22 +27,21 @@ def test(config, data_folder, epoch, data_type, nn_type):
     model.load(data_folder / "{}.torch".format(epoch))
     
     conf_mat, y_pred, y_true = model.test(test_dl)
+    print("Confusion matrix:")
     print(conf_mat)
-    print(util.utils.split_prediction(y_pred, y_true, 144))
+    num_classes = config[data_type]['c_out']
+    images_per_object = config[data_type]['img_per_obj']
+    print("TP predictions split by objects:")
+    #print(util.utils.split_prediction(y_pred, y_true, images_per_object))
+    print(util.utils.prediction_per_object(y_pred, y_true, num_classes, images_per_object))
     accuracy = util.utils.compute_accuracy(y_pred, y_true)
+    print("Average accuracy = {:.3f}".format(accuracy))
     
     return accuracy
 
 if __name__ == "__main__":
     config = util.utils.read_config('config.ini')
     data_keys = util.utils.get_available_data_types(config)
-    
-    random_seed = 1
-    random.seed(random_seed)
-    np.random.seed(random_seed)
-    torch.use_deterministic_algorithms(True)
-    torch.manual_seed(random_seed)
-    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--nn', type=str, required=True, help='Network architecture')
@@ -60,8 +60,10 @@ if __name__ == "__main__":
     subfolders = filter(lambda x: x.name.startswith(base_name), subfolders)
     run_epochs = []
     acc_values = []
-    for folder in subfolders:
-        epochs = [int(x.stem) for x in folder.glob("*.torch")]
+    for folder in tqdm(subfolders):
+        saves = [x.stem for x in folder.glob("*.torch")]
+        only_final = filter(lambda x: not x.startswith('checkpoint'), saves)
+        epochs = [int(x) for x in only_final]
         best_epoch = max(epochs)
         print("Network {}, epoch {}".format(folder.name, best_epoch))
         accuracy = test(config, folder, best_epoch, data_type, nn_type)

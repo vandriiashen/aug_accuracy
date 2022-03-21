@@ -19,6 +19,17 @@ def split_prediction(y_pred, y_true, obj_proj):
     
     return "[" + ",".join(str(el) for el in class_seq) + "]"
 
+def prediction_per_object(y_pred, y_true, num_classes, obj_proj):
+    total_num = y_pred.shape[0]
+    assert total_num % obj_proj == 0
+    
+    for i in range(total_num // obj_proj):
+        counter = np.zeros((num_classes))
+        for j in range(obj_proj):
+            counter[y_pred[i*obj_proj + j]] += 1
+        print(i, y_true[i*obj_proj], counter)
+                
+            
 def compute_accuracy(y_pred, y_true):
     return accuracy_score(y_true, y_pred)
     
@@ -36,6 +47,7 @@ def read_config(fname):
     for key in data_dict_keys:
         config[key]['c_in'] = int(parser[key].get('c_in', -1))
         config[key]['c_out'] = int(parser[key].get('c_out', -1))
+        config[key]['img_per_obj'] = int(parser[key].get('img_per_obj', -1))
     
     return config
 

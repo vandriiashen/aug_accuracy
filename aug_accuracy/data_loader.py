@@ -40,10 +40,17 @@ def playdoh_classification(gt_fname):
     y = np.where(stone_pixels > 0, 1, 0)
     return y
 
+def apple_classification(gt_fname):
+    gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
+    num_pits = gt[:,1]
+    y = np.where(num_pits == 2, 1, 0)
+    return y
+
 class_func_dict = {
     'avocado_classification': avocado_classification,
     'avocado_binary_classification': avocado_binary_classification,
-    'playdoh_classification': playdoh_classification
+    'playdoh_classification': playdoh_classification,
+    'apple_classification': apple_classification
 }
 
 class ImageStack(object):

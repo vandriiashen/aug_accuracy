@@ -17,6 +17,9 @@ class ActivationMap:
             final_layer = model.net[1].layer4
             # Weights of fc
             self.final_weights = list(model.net[1].parameters())[-2]
+        elif model.nn_type == "efficientnetb4":
+            final_layer = model.net[1].features[8]
+            self.final_weights = list(model.net[1].parameters())[-2]
         else:
             raise InputError("Unknown sample type. Got {}".format(model.nn_type))
         

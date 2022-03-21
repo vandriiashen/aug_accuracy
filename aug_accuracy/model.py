@@ -34,6 +34,7 @@ class NNmodel:
         
         self.set_classification_nn(c_in, c_out, nn_type)
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion.cuda()
         
     def set_classification_nn(self, c_in, c_out, nn_type):
         if nn_type == "resnet50":
@@ -69,21 +70,21 @@ class NNmodel:
         scaling_module_set_scale(self.scaling, 1 / std)
         scaling_module_set_bias(self.scaling, -mean / std)
         
-    def classify(self, inp):
+    def _classify(self, inp):
         inp = inp.to('cuda')
         out = self.net(inp)
         return out
         
-    def forward(self, inp, tg):
+    def _forward(self, inp, tg):
         inp = inp.to('cuda')
         tg = tg.to('cuda')
         out = self.net(inp)
         loss = self.criterion(out, tg)
-
+        
         return loss
     
-    def learn(self, inp, tg):
-        loss = self.forward(inp, tg)
+    def _learn(self, inp, tg):
+        loss = self._forward(inp, tg)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -94,7 +95,7 @@ class NNmodel:
         self.classifier.train()
         avg_loss = 0
         for (inp, tg) in dl:
-            avg_loss += self.learn(inp, tg).item()
+            avg_loss += self._learn(inp, tg).item()
         avg_loss /= len(dl)
         
         return avg_loss
@@ -103,7 +104,7 @@ class NNmodel:
         self.classifier.eval()
         avg_loss = 0
         for (inp, tg) in dl:
-            avg_loss += self.forward(inp, tg).item()
+            avg_loss += self._forward(inp, tg).item()
         avg_loss /= len(dl)
 
         return avg_loss
@@ -124,25 +125,16 @@ class NNmodel:
         conf_mat = np.zeros((self.c_out, self.c_out))
         y_true = []
         y_pred = []
-        j = 0
         
         for (inp, tg) in dl:
-            #print(inp)
-            out = self.classify(inp)
+            out = self._classify(inp)
             for i in range(out.size(dim=0)):
                 out_max = torch.max(out[i,:], 0)
                 gt = tg[i].item()
                 prediction = out_max.indices.item()
-                print(j, prediction)
-                if j in [188,389,399,405,407]:
-                    torch.set_printoptions(threshold=10_000)
-                    print(inp)
-                    print(out[i,:])
-                #print(tg)
                 y_true.append(gt)
                 y_pred.append(prediction)
                 conf_mat[gt, prediction] += 1
-                j += 1
             
         y_pred = np.array(y_pred)
         y_true = np.array(y_true)

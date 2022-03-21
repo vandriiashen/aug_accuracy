@@ -4,8 +4,8 @@ import random
 import os
 import argparse
 from pathlib import Path
-from torch.utils.data import DataLoader
 from tqdm import tqdm
+from torch.utils.data import DataLoader
 
 import aug_accuracy as util
 from aug_accuracy import InputError
@@ -27,8 +27,8 @@ def train(config, dataset_name, data_type, nn_type, run_num):
     batch_size = config['General']['batch_size']
     
     train_ds = util.ImageDatasetTransformable(train_input_glob, train_target_glob, config[data_type],
-               random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=True, horizontal_flip=True, rotate=True)
-    train_dl = DataLoader(train_ds, batch_size, shuffle=False)
+               random_crop=True, padding=20, crop_shape=(380,478), vertical_flip=True, horizontal_flip=True, rotate=True)
+    train_dl = DataLoader(train_ds, batch_size, shuffle=True)
     val_ds = util.ImageDatasetTransformable(val_input_glob, val_target_glob, config[data_type],
              random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=False, horizontal_flip=False, rotate=False)
     val_dl = DataLoader(val_ds, batch_size, shuffle=False)
@@ -67,6 +67,9 @@ def train(config, dataset_name, data_type, nn_type, run_num):
                 if prev_best_epoch != -1:
                     os.remove(save_path / "{}.torch".format(prev_best_epoch))
                 prev_best_epoch = epoch
+                
+        if epoch % 100 == 0:
+            model.save(save_path / "checkpoint_{}.torch".format(epoch), epoch, batch_size)
 
 if __name__ == "__main__":
     config = util.utils.read_config('config.ini')

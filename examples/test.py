@@ -262,6 +262,29 @@ def config_test():
     config_sections.remove('General')
     print(config_sections)
     print(config['playdoh'])
+
+def val_test():
+    model_name = "avo_t3"
+    nn_type = "resnet50"
+    run_num = 2
+    epoch = 8
+    val_input_glob = "../../../Data/Real/AugNN/avo_t3/validation/input/*.tiff"
+    val_target_glob = "../../../Data/Real/AugNN/avo_t3/validation/stats.csv"
+    #test_input_glob = "../../../Data/Real/AugNN/test_avo_inp1_3class/input/*.tiff"
+    #test_target_glob = "../../../Data/Real/AugNN/test_avo_inp1_3class/stats.csv"
+    save_path = Path("../network_state/{}_{}_r{}/".format(model_name, nn_type, run_num))
+    
+    config = util.utils.read_config('config.ini')
+    
+    batch_size = 1
+    val_ds = util.ImageDatasetTransformable(val_input_glob, val_target_glob, config["avocado"],
+              random_crop=False, padding=20, crop_shape=(380,478), vertical_flip=False, horizontal_flip=False, rotate=False)
+    val_dl = DataLoader(val_ds, batch_size, shuffle=False)
+    
+    model = util.NNmodel(1, 3, nn_type)
+    model.load(save_path / "{}.torch".format(epoch))
+    
+    print(model.validate(val_dl))
         
 if __name__ == "__main__":
     random_seed = 2
@@ -273,10 +296,11 @@ if __name__ == "__main__":
     
     #load_data()
     #normalization()
-    train_test()
+    #train_test()
     #apply_single_test()
     #apply_data_test()
     #cli_test()
     #activation_test()
     #multi_test()
     #config_test()
+    val_test()

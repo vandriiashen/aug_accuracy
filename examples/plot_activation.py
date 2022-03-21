@@ -4,6 +4,7 @@ import random
 import os
 import argparse
 from pathlib import Path
+from tqdm import tqdm
 from torch.utils.data import DataLoader
 
 import aug_accuracy as util
@@ -30,11 +31,13 @@ def test(config, data_folder, epoch, data_type, nn_type):
     img_folder = Path("../res")
     img_folder.mkdir(exist_ok=True)
     i = 0
-    for (inp, tg) in test_dl:
+    model.classifier.eval()
+    for (inp, tg) in tqdm(test_dl):
         tg = tg.item()
-        out = model.classify(inp)
+        out = model._classify(inp)
         out_class = torch.max(out, 1).indices.item()
-        cam.visualize(inp, tg, out_class, img_folder / "{}.png".format(i))
+        if (i % 50 == 0) or (out_class != tg):
+            cam.visualize(inp, tg, out_class, img_folder / "{}.png".format(i))
         i += 1
     
 if __name__ == "__main__":  
@@ -55,7 +58,9 @@ if __name__ == "__main__":
     run_num = args.run
     
     folder = Path("{}/{}_{}_r{}/".format(data_root, dataset_name, nn_type, run_num))
-    epochs = [int(x.stem) for x in folder.glob("*.torch")]
+    saves = [x.stem for x in folder.glob("*.torch")]
+    only_final = filter(lambda x: not x.startswith('checkpoint'), saves)
+    epochs = [int(x) for x in only_final]
     best_epoch = max(epochs)
     
     test(config, folder, best_epoch, data_type, nn_type)

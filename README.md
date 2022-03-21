@@ -12,7 +12,7 @@ Tensorboard is used for logging.
 
 # Installation
 ```
-conda create -n class_nn -c conda-forge 'pytorch=*=*cuda*' 'torchvision=*=*cu*' tensorboard 'imageio<2.15' scikit-learn scikit-image matplotlib numpy
+conda create -n class_nn -c conda-forge 'pytorch=*=*cuda*' 'torchvision=*=*cu*' tensorboard 'imageio<2.15' scikit-learn scikit-image matplotlib numpy tqdm
 ```
 ```
 pip install -e .
