@@ -18,15 +18,6 @@ class InputError(Exception):
     def __init__(self, message):
         self.message = message
         
-def avocado_classification(gt_fname):
-    low_thr = 10**-3
-    high_thr = 10**-2
-    gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
-    air_ratio = gt[:,4] / gt[:,1:].sum(axis=1)
-    y = np.where(air_ratio > low_thr, 1, 0)
-    y[air_ratio > high_thr] = 2
-    return y
-
 def avocado_binary_classification(gt_fname):
     thr = 10**-2
     gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
@@ -34,23 +25,15 @@ def avocado_binary_classification(gt_fname):
     y = np.where(air_ratio > thr, 1, 0)
     return y
 
-def playdoh_classification(gt_fname):
+def playdoh_triple_classification(gt_fname):
     gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
-    stone_pixels = gt[:,2]
-    y = np.where(stone_pixels > 0, 1, 0)
-    return y
-
-def apple_classification(gt_fname):
-    gt = np.loadtxt(gt_fname, skiprows=1, delimiter=",")
-    num_pits = gt[:,1]
-    y = np.where(num_pits == 2, 1, 0)
+    stone_count = gt[:,3]
+    y = stone_count.astype(int)
     return y
 
 class_func_dict = {
-    'avocado_classification': avocado_classification,
     'avocado_binary_classification': avocado_binary_classification,
-    'playdoh_classification': playdoh_classification,
-    'apple_classification': apple_classification
+    'playdoh_triple_classification': playdoh_triple_classification
 }
 
 class ImageStack(object):
