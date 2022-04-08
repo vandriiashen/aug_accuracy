@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 import aug_accuracy as util
 from aug_accuracy import InputError
 
-def test(config, data_folder, epoch, data_type, nn_type):
+def test(config, data_folder, epoch_file, data_type, nn_type):
     test_root = config[data_type]['test_folder']
     test_input_glob = "{}/input/*.tiff".format(test_root)
     test_target_glob = "{}/stats.csv".format(test_root)
@@ -24,7 +24,7 @@ def test(config, data_folder, epoch, data_type, nn_type):
     c_out = config[data_type]['c_out']
     
     model = util.NNmodel(c_in, c_out, nn_type)
-    model.load(data_folder / "{}.torch".format(epoch))
+    model.load(epoch_file)
     
     conf_mat, y_pred, y_true = model.test(test_dl)
     print("Confusion matrix:")
@@ -32,7 +32,6 @@ def test(config, data_folder, epoch, data_type, nn_type):
     num_classes = config[data_type]['c_out']
     images_per_object = config[data_type]['img_per_obj']
     print("TP predictions split by objects:")
-    #print(util.utils.split_prediction(y_pred, y_true, images_per_object))
     print(util.utils.prediction_per_object(y_pred, y_true, num_classes, images_per_object))
     accuracy = util.utils.compute_accuracy(y_pred, y_true)
     print("Average accuracy = {:.3f}".format(accuracy))
@@ -54,19 +53,30 @@ if __name__ == "__main__":
     data_type = args.obj
     nn_type = args.nn
     
+    # By default, use the epoch with the best validation score. If this flag is set to false, checkpoints could also be used.
+    use_only_best = True
+    
     data_root = Path(data_root)
     base_name = "{}_{}_r".format(dataset_name, nn_type)
     subfolders = [x for x in data_root.iterdir() if x.is_dir()]
     subfolders = filter(lambda x: x.name.startswith(base_name), subfolders)
+    subfolders = sorted(subfolders)
     run_epochs = []
     acc_values = []
     for folder in tqdm(subfolders):
         saves = [x.stem for x in folder.glob("*.torch")]
-        only_final = filter(lambda x: not x.startswith('checkpoint'), saves)
-        epochs = [int(x) for x in only_final]
-        best_epoch = max(epochs)
+        if use_only_best:
+            only_final = filter(lambda x: not x.startswith('checkpoint'), saves)
+            epochs = [int(x) for x in only_final]
+            best_epoch = max(epochs)
+            epoch_file = folder / "{}.torch".format(best_epoch)
+        else:
+            saves = sorted(saves)
+            best_checkpoint = saves[-1]
+            best_epoch = best_checkpoint.split('_')[-1]
+            epoch_file = folder / "{}.torch".format(best_checkpoint)
         print("Network {}, epoch {}".format(folder.name, best_epoch))
-        accuracy = test(config, folder, best_epoch, data_type, nn_type)
+        accuracy = test(config, folder, epoch_file, data_type, nn_type)
         run_epochs.append(best_epoch)
         acc_values.append(accuracy)
         

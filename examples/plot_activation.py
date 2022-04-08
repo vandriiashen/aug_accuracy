@@ -36,7 +36,7 @@ def test(config, data_folder, epoch, data_type, nn_type):
         tg = tg.item()
         out = model._classify(inp)
         out_class = torch.max(out, 1).indices.item()
-        if (i % 50 == 0) or (out_class != tg):
+        if (i % 1 == 0) or (out_class != tg):
             cam.visualize(inp, tg, out_class, img_folder / "{}.png".format(i))
         i += 1
     
